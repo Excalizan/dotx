@@ -1,8 +1,7 @@
 use clap::Parser;
 use image::{self, GenericImageView};
 use std::{
-    fmt::Result,
-    fs::{self, File, OpenOptions},
+    fs::{self, File},
     io::{prelude::*, Write},
     path::PathBuf,
 };
