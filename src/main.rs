@@ -20,7 +20,8 @@ struct Args {
 
 fn main() {
     let args = Args::parse();
-    let path = PathBuf::from(args.path);
+    let path = PathBuf::from(&args.path);
+    let target = PathBuf::from(&args.target);
 
     if path.is_dir() {
         let files = fs::read_dir(path).expect("Failed to read directory");
@@ -35,9 +36,11 @@ fn main() {
     } else {
         let file_name = path.file_name().unwrap().to_str().unwrap();
         if file_name.ends_with(".png") {
-            png_to_x(path);
+            println!("{}", path.to_str().unwrap());
+            println!("{}", target.to_str().unwrap());
+            png_to_x(path, target);
         } else if file_name.ends_with(".x") {
-            x_to_png(path);
+            x_to_png(path, target);
         } else {
             println!("Unsupported file type");
         }
@@ -46,7 +49,7 @@ fn main() {
     println!("Done");
 }
 
-fn png_to_x(path: PathBuf) {
+fn png_to_x(path: PathBuf, target: PathBuf) {
     let img = image::open(path).expect("Failed to open image");
     let mut str = String::new();
     let mut last_line = 0;
@@ -58,13 +61,13 @@ fn png_to_x(path: PathBuf) {
             str.push_str("\n");
             last_line = pixel.1;
         }
-        str.push_str(&hex_color.replace("#", ""));
+        str.push_str(&hex_color);
     });
 
     let mut file = OpenOptions::new()
         .write(true)
         .create(true)
-        .open("output.x")
+        .open(target.to_str().unwrap())
         .expect("Failed to create file");
 
     file.write_all(str.as_bytes())
@@ -73,7 +76,7 @@ fn png_to_x(path: PathBuf) {
     println!("File created successfully");
 }
 
-fn x_to_png(path: PathBuf) {
+fn x_to_png(path: PathBuf, target: PathBuf) {
     /*
     example x file:
     0000003400006800009C0000D00000
@@ -98,6 +101,6 @@ fn x_to_png(path: PathBuf) {
         }
     }
 
-    img.save("output.png").expect("Failed to save image");
+    img.save(target.to_str().unwrap()).expect("Failed to save image");
     println!("Image created successfully");
 }
