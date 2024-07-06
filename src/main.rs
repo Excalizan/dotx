@@ -1,8 +1,9 @@
 use clap::Parser;
 use image::{self, GenericImageView};
 use std::{
-    fs::{self, OpenOptions},
-    io::Write,
+    fmt::Result,
+    fs::{self, File, OpenOptions},
+    io::{prelude::*, Write},
     path::PathBuf,
 };
 
@@ -49,58 +50,58 @@ fn main() {
     println!("Done");
 }
 
-fn png_to_x(path: PathBuf, target: PathBuf) {
+fn png_to_x(path: PathBuf, target: PathBuf){
+    // create a binary file
+    let mut file = File::create(target).expect("Failed to create file");
+
     let img = image::open(path).expect("Failed to open image");
-    let mut str = String::new();
-    let mut last_line = 0;
+    let (width, height) = img.dimensions();
+    let mut content = Vec::<u8>::new();
 
-    img.pixels().for_each(|pixel| {
-        let hex_color = format!("{:02X}{:02X}{:02X}", pixel.2[0], pixel.2[1], pixel.2[2]);
-
-        if last_line != pixel.1 {
-            str.push_str("\n");
-            last_line = pixel.1;
+    for y in 0..height {
+        for x in 0..width {
+            let pixel = img.get_pixel(x, y);
+            let r = pixel[0];
+            let g = pixel[1];
+            let b = pixel[2];
+            content.push(r);
+            content.push(g);
+            content.push(b);
         }
-        str.push_str(&hex_color);
-    });
+        content.push(0x0A);
+    }
 
-    let mut file = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .open(target.to_str().unwrap())
-        .expect("Failed to create file");
-
-    file.write_all(str.as_bytes())
-        .expect("Failed to write to file");
-
+    file.write_all(&content).expect("Failed to write to file");
     println!("File created successfully");
+
 }
 
 fn x_to_png(path: PathBuf, target: PathBuf) {
-    /*
-    example x file:
-    0000003400006800009C0000D00000
-    0034003434016834029C3403D03404
-    0068003468026868049C6806D06808
-    009C00349C03689C069C9C09D09C0C
-    00D00034D00468D0089CD00CD0D010
-     */
+    let mut file = File::open(path).expect("Failed to open file");
+    let mut content = Vec::<u8>::new();
+    file.read_to_end(&mut content).expect("Failed to read file");
 
-    let content = fs::read_to_string(path).expect("Failed to read file");
-    let width = content.lines().next().unwrap().len() / 6;
-    let height = content.lines().count();
-    let mut img = image::ImageBuffer::new(width as u32, height as u32);
+    let mut width = 0;
+    let mut height = 0;
+    
+    let mut pixels = Vec::<u8>::new();
+    let mut row = Vec::<u8>::new();
 
-    for (y, line) in content.lines().enumerate() {
-        for (x, hex) in line.chars().collect::<Vec<char>>().chunks(6).enumerate() {
-            let hex = hex.iter().collect::<String>();
-            let r = u8::from_str_radix(&hex[0..2], 16).unwrap();
-            let g = u8::from_str_radix(&hex[2..4], 16).unwrap();
-            let b = u8::from_str_radix(&hex[4..6], 16).unwrap();
-            img.put_pixel(x as u32, y as u32, image::Rgb([r, g, b]));
+    for byte in content {
+        if byte == 0x0A {
+            height += 1;
+            width = row.len() / 3;
+            pixels.append(&mut row);
+        } else {
+            row.push(byte);
         }
     }
 
-    img.save(target.to_str().unwrap()).expect("Failed to save image");
+    let img = image::ImageBuffer::from_fn(width as u32, height as u32, |x, y| {
+        let index = (y * width as u32 + x) as usize * 3;
+        image::Rgb([pixels[index], pixels[index + 1], pixels[index + 2]])
+    });
+
+    img.save(target).expect("Failed to save image");
     println!("Image created successfully");
 }
