@@ -49,7 +49,7 @@ fn main() {
     println!("Done");
 }
 
-fn png_to_x(path: PathBuf, target: PathBuf){
+fn png_to_x(path: PathBuf, target: PathBuf) {
     // create a binary file
     let mut file = File::create(target).expect("Failed to create file");
 
@@ -72,7 +72,6 @@ fn png_to_x(path: PathBuf, target: PathBuf){
 
     file.write_all(&content).expect("Failed to write to file");
     println!("File created successfully");
-
 }
 
 fn x_to_png(path: PathBuf, target: PathBuf) {
@@ -82,7 +81,7 @@ fn x_to_png(path: PathBuf, target: PathBuf) {
 
     let mut width = 0;
     let mut height = 0;
-    
+
     let mut pixels = Vec::<u8>::new();
     let mut row = Vec::<u8>::new();
 
@@ -103,4 +102,15 @@ fn x_to_png(path: PathBuf, target: PathBuf) {
 
     img.save(target).expect("Failed to save image");
     println!("Image created successfully");
+}
+
+fn _make_test_image(width: u32, height: u32) {
+    let mut img = image::ImageBuffer::new(width, height);
+    for (x, y, pixel) in img.enumerate_pixels_mut() {
+        let r = (x * 255 / width) as u8;
+        let g = (y * 255 / height) as u8;
+        let b = 128;
+        *pixel = image::Rgb([r, g, b]);
+    }
+    img.save("test.png").expect("Failed to save image");
 }
