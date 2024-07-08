@@ -1,7 +1,7 @@
 use clap::Parser;
 use image::{self, GenericImageView};
 use std::{
-    fs::{self, File},
+    fs::File,
     io::{prelude::*, Write},
     path::PathBuf,
 };
@@ -23,21 +23,15 @@ fn main() {
     let path = PathBuf::from(&args.path);
     let target = PathBuf::from(&args.target);
 
+    println!("Processing file: {:?}", path);
+    println!("Target file: {:?}", target);
+
     if path.is_dir() {
-        let files = fs::read_dir(path).expect("Failed to read directory");
-        files.for_each(|file| {
-            let file = file.expect("Failed to read file");
-            let path = file.path();
-            let file_name = path.file_name().unwrap().to_str().unwrap();
-            if file_name.contains(&args.target) {
-                println!("{}", file_name);
-            }
-        });
+        println!("Detected directory");
+        println!("Only files with .png or .x extension will be processed");
     } else {
         let file_name = path.file_name().unwrap().to_str().unwrap();
         if file_name.ends_with(".png") {
-            println!("{}", path.to_str().unwrap());
-            println!("{}", target.to_str().unwrap());
             png_to_x(path, target);
         } else if file_name.ends_with(".x") {
             x_to_png(path, target);
@@ -113,4 +107,40 @@ fn _make_test_image(width: u32, height: u32) {
         *pixel = image::Rgb([r, g, b]);
     }
     img.save("test.png").expect("Failed to save image");
+}
+
+#[cfg(test)]
+mod tests {
+    // Note this useful idiom: importing names from outer (for mod tests) scope.
+    use super::*;
+
+    #[test]
+    fn test_png_to_x() {
+        let path = PathBuf::from("test.png");
+        let target = PathBuf::from("test.x");
+        png_to_x(path, target);
+        assert!(PathBuf::from("test.x").exists());
+    }
+
+    #[test]
+    fn test_x_to_png() {
+        let path = PathBuf::from("test.x");
+        let target = PathBuf::from("test2.png");
+        x_to_png(path, target);
+        assert!(PathBuf::from("test2.png").exists());
+    }
+
+    #[test]
+    fn test_correct_transformation() {
+        let image1 = image::open("test.png").expect("Failed to open image");
+        let image2 = image::open("test2.png").expect("Failed to open image");
+        assert_eq!(image1.dimensions(), image2.dimensions());
+        for y in 0..image1.height() {
+            for x in 0..image1.width() {
+                let pixel1 = image1.get_pixel(x, y);
+                let pixel2 = image2.get_pixel(x, y);
+                assert_eq!(pixel1, pixel2);
+            }
+        }
+    }
 }
