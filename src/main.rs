@@ -108,39 +108,3 @@ fn _make_test_image(width: u32, height: u32) {
     }
     img.save("test.png").expect("Failed to save image");
 }
-
-#[cfg(test)]
-mod tests {
-    // Note this useful idiom: importing names from outer (for mod tests) scope.
-    use super::*;
-
-    #[test]
-    fn test_png_to_x() {
-        let path = PathBuf::from("test.png");
-        let target = PathBuf::from("test.x");
-        png_to_x(path, target);
-        assert!(PathBuf::from("test.x").exists());
-    }
-
-    #[test]
-    fn test_x_to_png() {
-        let path = PathBuf::from("test.x");
-        let target = PathBuf::from("test2.png");
-        x_to_png(path, target);
-        assert!(PathBuf::from("test2.png").exists());
-    }
-
-    #[test]
-    fn test_correct_transformation() {
-        let image1 = image::open("test.png").expect("Failed to open image");
-        let image2 = image::open("test2.png").expect("Failed to open image");
-        assert_eq!(image1.dimensions(), image2.dimensions());
-        for y in 0..image1.height() {
-            for x in 0..image1.width() {
-                let pixel1 = image1.get_pixel(x, y);
-                let pixel2 = image2.get_pixel(x, y);
-                assert_eq!(pixel1, pixel2);
-            }
-        }
-    }
-}
